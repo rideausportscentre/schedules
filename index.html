@@ -38,35 +38,37 @@
   <h1>Upcoming Events</h1>
   <div id="events">Loading events...</div>
 
-  <script>
-    async function loadEvents() {
-      const response = await fetch("https://corsproxy.io/?https://www.rideausportscentre.com/events/?ical=1");
-      const icsText = await response.text();
+ <script>
+  async function loadEvents() {
+    const response = await fetch("https://cors-anywhere.herokuapp.com/https://www.rideausportscentre.com/events/?ical=1");
+    const icsText = await response.text();
 
-      const events = [...icsText.matchAll(/BEGIN:VEVENT([\s\S]*?)END:VEVENT/g)].map(event => {
-        const summary = /SUMMARY:(.*)/.exec(event[1])?.[1] || "";
-        const description = /DESCRIPTION:(.*)/.exec(event[1])?.[1] || "";
-        const dtstart = /DTSTART.*:(.*)/.exec(event[1])?.[1] || "";
-        const date = new Date(dtstart.replace(/T.*$/, ""));
+    // Parse the ICS data into event details
+    const events = [...icsText.matchAll(/BEGIN:VEVENT([\\s\\S]*?)END:VEVENT/g)].map(event => {
+      const summary = /SUMMARY:(.*)/.exec(event[1])?.[1] || "";
+      const description = /DESCRIPTION:(.*)/.exec(event[1])?.[1] || "";
+      const dtstart = /DTSTART.*:(.*)/.exec(event[1])?.[1] || "";
+      const date = new Date(dtstart.replace(/T.*$/, ""));
+      return { summary, description, date };
+    });
 
-        return { summary, description, date };
-      });
+    // Filter for upcoming events
+    const upcoming = events
+      .filter(e => e.date >= new Date())
+      .sort((a, b) => a.date - b.date)
+      .slice(0, 5); // Show up to 5 upcoming events
 
-      const upcoming = events
-        .filter(e => e.date >= new Date())
-        .sort((a, b) => a.date - b.date)
-        .slice(0, 5);
+    // Display events
+    document.getElementById("events").innerHTML = upcoming.map(event => `
+      <div class="event">
+        <h2>${event.summary}</h2>
+        <p><strong>Date:</strong> ${event.date.toDateString()}</p>
+        <p>${event.description}</p>
+      </div>
+    `).join("");
+  }
 
-      document.getElementById("events").innerHTML = upcoming.map(event => `
-        <div class="event">
-          <h2>${event.summary}</h2>
-          <p><strong>Date:</strong> ${event.date.toDateString()}</p>
-          <p>${event.description}</p>
-        </div>
-      `).join("");
-    }
-
-    loadEvents();
-  </script>
+  loadEvents();
+</script>
 </body>
 </html>
