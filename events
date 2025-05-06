@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSC Upcoming Events</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f6f9fc;
+      color: #222;
+      text-align: center;
+      padding: 2em;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 0.5em;
+    }
+    .event {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin: 1em auto;
+      padding: 1em;
+      max-width: 800px;
+    }
+    .event h2 {
+      font-size: 2em;
+      margin: 0.3em 0;
+    }
+    .event p {
+      font-size: 1.2em;
+      margin: 0.2em 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upcoming Events</h1>
+  <div id="events">Loading events...</div>
+
+  <script>
+    async function loadEvents() {
+      const response = await fetch("https://corsproxy.io/?https://www.rideausportscentre.com/events/?ical=1");
+      const icsText = await response.text();
+
+      const events = [...icsText.matchAll(/BEGIN:VEVENT([\s\S]*?)END:VEVENT/g)].map(event => {
+        const summary = /SUMMARY:(.*)/.exec(event[1])?.[1] || "";
+        const description = /DESCRIPTION:(.*)/.exec(event[1])?.[1] || "";
+        const dtstart = /DTSTART.*:(.*)/.exec(event[1])?.[1] || "";
+        const date = new Date(dtstart.replace(/T.*$/, ""));
+
+        return { summary, description, date };
+      });
+
+      const upcoming = events
+        .filter(e => e.date >= new Date())
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 5);
+
+      document.getElementById("events").innerHTML = upcoming.map(event => `
+        <div class="event">
+          <h2>${event.summary}</h2>
+          <p><strong>Date:</strong> ${event.date.toDateString()}</p>
+          <p>${event.description}</p>
+        </div>
+      `).join("");
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
